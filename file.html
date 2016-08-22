@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="format-detection" content="telephone=no, email=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>VEE-JS</title>
+  <!-- css -->
+  <style type="text/css">
+  #test {
+    background-color: #0d3349;
+    height: 300px
+  }
+  #test.highlight {
+    background-color: red;
+  }
+  #test > div {
+    height: 20px;
+  }
+  </style>
+</head>
+<body>
+  <!-- html -->
+  <div id="test" class="test-node" tap-highlight="yes">
+    <div id="test1"></div>
+    <div id="test2"></div>
+    <div id="test3"></div>
+    <div id="test4" class="test4-node"></div>
+    <div id="test5"><div></div></div>
+    <div id="test9"></div>
+    <input id="test-input"/>
+  </div>
+  <input id="file" type="file" onchange="showImage()">
+  <img id="preview">
+
+<!-- js -->
+<script src="src/vee.js"></script>
+<script src="src/loader.js" data-main="env,event,dom,gesture"></script>
+<script>
+$(function() {
+  "use strict"
+  
+  
+})
+
+function showImage() {
+  var file = document.getElementById('file').files[0];
+  var url = window.URL.createObjectURL(file);
+  console.log(file);
+  console.log(url);
+  document.getElementById('preview').src = url;
+}
+
+
+</script>

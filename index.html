@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="format-detection" content="telephone=no, email=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>UNIT TEST - VJS</title>
+  <!-- css -->
+  <style type="text/css">
+  #test {
+    background-color: #0d3349;
+    margin-bottom: 8px;
+  }
+  #test.highlight {
+    background-color: red;
+  }
+  #test > div {
+    height: 20px;
+  }
+  </style>
+  
+  <link href="qunit/qunit-1.12.0.css" rel="stylesheet">
+  <script src="qunit/qunit-1.12.0.js"></script>
+</head>
+<body>
+  <!-- html -->
+  <div id="test" class="test-node" tap-highlight="yes">
+    <div id="test1"></div>
+    <div id="test2"></div>
+    <div id="test3"></div>
+    <div id="test4" class="test4-node"></div>
+    <div id="test5"><div></div></div>
+    <div id="test9"></div>
+    <input id="test-input"/>
+  </div>
+  <div id="qunit"></div>
+  <div id="qunit-fixture"></div>
+
+<!-- js -->
+<script src="src/vee.js"></script>
+<script src="src/promise.js"></script>
+<script src="src/require.js" data-require="env;url;event;dom;ajax"></script>
+<script>
+require('data').then(function() {
+  "use strict"
+  
+  if (location.search == '') {
+    location.href = location.href.replace('index.html', '') + 
+                    'index.html?i=1&b=true&a=1&a=2&a=3&o=%7B%22a%22%3A1%7D'
+    return;
+  }
+
+
+  module('Array') // ==================================================
+
+  test('from', function() { //
+    function f() {
+      return Array.from(arguments);
+    }
+    
+    deepEqual(f(1,2,3), [1,2,3], 'Array.from')
+
+    function _from(obj, mapFn, context) {
+      var array = Array.prototype.slice.call(obj);
+      if (v.isFunction(mapFn)) {
+        return array.map(mapFn, context)
+      }
+      return array
+    }
+    function f2() {
+      return _from(arguments);
+    }
+
+    deepEqual(f2(1,2,3), [1,2,3], 'Array.from <function>')
+  })
+
+  test('includes', function() {
+    var ary = [3, 2, 3, 4, 5]
+    ok(ary.includes(3) === true, 'includes #1')
+    ok(ary.includes(6) === false, 'includes #2')
+    ok(ary.includes(3, 3) === false, 'includes #3')
+    ok(ary.includes(3, 2) === true, 'includes #4')
+
+    function includes(array, searchElement, fromIndex) {
+      fromIndex = fromIndex | 0
+      return array.indexOf(searchElement, fromIndex) >= fromIndex
+    }
+
+    ok(includes(ary, 3) === true, 'includes <function> #1')
+    ok(includes(ary, 6) === false, 'includes <function> #2')
+    ok(includes(ary, 3, 3) === false, 'includes <function> #3')
+    ok(includes(ary, 3, 2) === true, 'includes <function> #4')
+  })
+
+  test('remove', function() {
+    var ary = [1, 2, 3, 4, 5]
+    ary.remove(3)
+    deepEqual(ary, [1, 2, 4, 5], 'remove element #1')
+    ok(ary.length === 4, 'remvoe element #2')
+
+    function _remove(array, element) {
+      var index = array.indexOf(element)
+      if (index >= 0) {
+        return array.splice(index, 1)[0]
+      }
+    }
+
+    _remove(ary, 4)
+    deepEqual(ary, [1, 2, 5], 'remove element <function> #1')
+    ok(ary.length === 3, 'remvoe element <function> #2')
+  })
+
+  test('find', function () {
+    var ary = [1, 3, 4, 2]
+    ok(4 === ary.find(function(x) { return x > 3 }), 'find #1')
+    ok(typeof ary.find(function(x) { return x > 5 }) === 'undefined', 'find #2')
+
+    function _find(array, finder) {
+      return array.filter(finder)[0]
+    }
+
+    ok(4 === _find(ary, function(x) { return x > 3 }), 'find <function> #1')
+    ok(typeof _find(ary, function(x) { return x > 5 }) === 'undefined', 'find <function> #2')
+  })
+
+  module('String') // ==================================================
+  
+  test('trim', function() {
+    equal(' \n\r\t a  \n\r\t '.trim(), 'a', 'trim')
+
+    function _trim(string) {
+      return string.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
+    }
+
+    equal(_trim(' \n\r\t a  \n\r\t '), 'a', 'trim <function>')
+  })
+  
+  module('Function') // ================================================
+
+  test('bind', function() { //
+    var Fn = function() {
+      this.value = 'hello'
+    }
+    var fn = new Fn()
+    var fn2 = function(value) {
+      return (this.value || 'no') + ' ' + value
+    }.bind(fn, 'world')
+    
+    equal(fn2(), 'hello world')
+  })
+
+  asyncTest('defer', function() { //
+    var a = 'before'
+    expect(2)
+    !function(arg1) {
+      equal(arg1, 'test', 'arguments passed')
+      equal(a, 'after')
+      start()
+    }.defer(100, 'test')
+    a = 'after'
+  })
+
+  asyncTest('cancel', function() { //
+    expect(1)
+    var result1 = false;
+    var result2 = true;
+    var fn1 = function() {
+      ok(result1)
+      start()
+    }
+    var fn2 = function() {
+      ok(result2)
+      start()
+    }
+    
+    fn1.defer(100)
+    fn2.defer(100)
+    
+    fn1.cancel()
+  })
+  
+  asyncTest('buffer', function() { //
+    expect(1)
+    var fn = function() {
+      ok(true)
+      start()
+    }
+    
+    fn.buffer(100)
+    fn.buffer(100)
+    fn.buffer(100)
+    fn.buffer(100)
+    fn.buffer(100)
+    fn.buffer(100)
+  })
+
+
+  module('Date') // ====================================================
+  
+  test('format', function() {
+    var date = new Date(1438152423519)
+    var str = date.format("yyyy-mm-dd h:i:s H:ii:ss.S w M W", function(str, value, val) { return str[0] == 'w' ? ['周日','周一','周二','周三','周四','周五','周六'][value] : val});
+    equal(str, '2015-07-29 2:47:3 14:ii:ss.519 周三 七月 星期三', 'format')
+
+    function _format(date, format, fn) {
+      var marks = {
+        'y': date.getFullYear(), // 年份
+        'm': date.getMonth() + 1, // 月份
+        'M': Date.MONTH_NAMES[date.getMonth()], // 月份 名称
+        'd': date.getDate(), // 日
+        'h': date.getHours() % 12, // 小时 12小时制
+        'H': date.getHours(), // 小时 24小时制
+        'i': date.getMinutes(), // 分
+        's': date.getSeconds(), // 秒
+        'S': date.getMilliseconds(), // 毫秒
+        'w': date.getDay(), // 星期
+        'W': Date.WEEK_NAMES[date.getDay()], // 星期 名称
+      }
+      v.each(marks, function(value, mark) {
+        if (new RegExp('(' + mark + '{1,4})').test(format)) {
+          var matched = RegExp.$1
+          var len = matched.length
+          var val = (len > 1 ? '000' : '') + value
+          if (len > 1) {
+            val = val.substring(val.length - len)
+          }
+          if (fn) {
+            val = fn(mark, value, val)
+          }
+          format = format.replace(matched, val)
+        }
+      })
+      return format;
+    }
+
+    str = _format(date, "yyyy-mm-dd h:i:s H:ii:ss.S w M W", function(str, value, val) { return str[0] == 'w' ? ['周日','周一','周二','周三','周四','周五','周六'][value] : val});
+    equal(str, '2015-07-29 2:47:3 14:ii:ss.519 周三 七月 星期三', 'format <function>')
+  })
+  
+  module('Core') // ====================================================
+
+  test('mixin', function() { //
+    var a = {a:1, c:0}
+    var b = {b:2, c:3}
+    var c = {a:1, b:2, c:3}
+    var d = {a:1, b:2, c:0}
+    
+    v.mixin(a, b)
+    deepEqual(a, d, 'v.mixin({a:1, c:0}, {b:2, c:3}) = {a:1, b:2, c:0}')
+    
+    a = {a:1, c:0}
+    v.mixin(a, b, true)
+    deepEqual(a, c, 'v.mixin({a:1, c:0}, {b:2, c:3}, true) = {a:1, b:2, c:3}')
+    
+    a = {a:1, c:0}
+    v.x(a, b, {d:4})
+    deepEqual(a, {a:1, b:2, c:0, d:4}, 'v.x({a:1, c:0}, {b:2, c:3}, {d:4}) = {a:1, b:2, c:0, d:4}')
+  })
+
+  test('defined', function() { //
+    var a
+    var b = false
+    ok(v.defined(a) === false, 'v.defined(a) === false')
+    ok(v.defined(b), 'v.defined(b)')
+  })
+
+  test('type', function() { //
+    function F() {
+      return true;
+    }
+    
+    equal(v.type('string'), 'string', 'string')
+    equal(v.type(new String('string')), 'string', 'new String')
+    
+    equal(v.type(1), 'number', 'int')
+    equal(v.type(1.123), 'number', 'float')
+    
+    equal(v.type(/$cator/ig), 'regexp', 'regexp')
+    equal(v.type(new RegExp('$cator', 'ig')), 'regexp', 'new RegExp')
+    
+    equal(v.type([]), 'array', 'array')
+    equal(v.type(new Array(3)), 'array', 'new Array')
+    
+    equal(v.type({}), 'object', 'object')
+    equal(v.type(new Object), 'object', 'new Object')
+    equal(v.type(new F), 'object', 'new F')
+    
+    equal(v.type(F), 'function', 'function')
+    equal(v.type(new Function), 'function', 'new Function')
+  })
+  
+  test('type validation', function() { //
+    ok(v.isString('string'), 'isString #1')
+    ok(v.isString(new String('string')), 'isString #2')
+    ok(!v.isString(123), 'number is not a string')
+    
+    ok(v.isFunction(function() {}), 'isFunction #1')
+    ok(v.isFunction(new Function), 'isFunction #2')
+    ok(!v.isFunction('string'), 'string is not a function')
+    
+    ok(v.isNumber(123), 'isNumber #1')
+    ok(v.isNumber(123.232), 'isNumber #2')
+    ok(v.isNumber(new Number), 'isNumber #3')
+    ok(!v.isNumber('string'), 'string is not a number')
+    ok(!v.isNumber(NaN), 'NaN is not a number')
+    
+    ok(v.isObject(new Object) === true, 'new Object is a object')
+    ok(v.isObject({}) === true, '{} is a object')
+    ok(v.isObject([]) === false, 'Array is not a object')
+    ok(v.isObject(1) === false, 'Number is not a object')
+  })
+  
+  test('rand', function() {
+    var r = v.rand(10)
+    ok(r >= 0 && r < 10, 'rand test 1')
+    r = v.rand(10)
+    ok(r >= 0 && r < 10, 'rand test 2')
+    r = v.rand(10)
+    ok(r >= 0 && r < 10, 'rand test 3')
+    r = v.rand(10)
+    ok(r >= 0 && r < 10, 'rand test 4')
+    r = v.rand(10)
+    ok(r >= 0 && r < 10, 'rand test 5')
+    r = v.rand(10, 20)
+    ok(r >= 10 && r < 20, 'rand test 6')
+    r = v.rand(10, 20)
+    ok(r >= 10 && r < 20, 'rand test 7')
+    r = v.rand(10, 20)
+    ok(r >= 10 && r < 20, 'rand test 8')
+    r = v.rand(10, 20)
+    ok(r >= 10 && r < 20, 'rand test 9')
+    r = v.rand(10, 20)
+    ok(r >= 10 && r < 20, 'rand test 10')
+  })
+  
+  test('each', function() { //
+    var a = {a:1, b:2, c:3}  
+    var b = {a:2, b:3, c:4}
+    
+    v.each(a, function(element, key, object) {
+      object[key] = element + 1
+    })
+    
+    deepEqual(a, b)
+  })
+
+  test('map', function() { //
+    var a = {a:1, b:2, c:3}  
+    var b = {a:2, b:4, c:6}
+    
+    var c = v.map(a, function(element, key, object) {
+      return object[key] + element
+    })
+    
+    notDeepEqual(a, b, 'origin')
+    deepEqual(b, c, 'result')
+  })
+  
+  test('tpl', function() {
+    var obj = {
+      name: 'cator',
+      data: {
+        age: 35
+      },
+      favors: ['movies', 'pets', 'phonts']
+    }
+    var tpl = '<div>hello ${name}</div><div>You are ${ data.age } old.</div><div>${favors.0}, ${favors.2}.</div>'
+    var result = '<div>hello cator</div><div>You are 35 old.</div><div>movies, phonts.</div>'
+    equal(v.tpl(tpl, obj), result, 'tpl')
+    
+    tpl = '${hide1?a:b}${hide1?a}${hide1:b}${hide2?a:b}${hide2?a}${hide2:b}'
+    equal(v.tpl(tpl, {hide1: true, hide2: false}), 'aabb', 'with condition expression')
+  });
+  
+  test('html', function() {
+    var str = '<>&\'"'
+    var encoded = '&lt;&gt;&amp;&#39;&quot;'
+    equal(v.html.encode(str), encoded, 'html encode')
+    equal(v.html.decode(encoded), str, 'html decode')
+  })
+  
+  test('OOP', function() { //
+    var Base = Object.extend({
+      desc: 'Base',
+      name: '',
+      weight: 70,
+      init: function(name) {
+        this.name = name || 'cator'
+      },
+      getName: function() {
+        return this.name
+      },
+      getWeight: function() {
+        return this.weight;
+      }
+    })
+    
+    var SubClass1 = Base.extend({
+      desc: 'SubClass1',
+      init: function(name) {
+        this.super('init', arguments)
+        this.name += ' vee'
+      }
+    })
+    var SubClass2 = Base.extend({
+      desc: 'SubClass2',
+      age: 35,
+      getAge: function() {
+        return this.age
+      }
+    })
+    
+    var EndClass = SubClass1.extend({
+      desc: 'EndClass',
+      statics: {
+        sm: function() {
+          return true
+        },
+        end: true
+      },
+      height: 170,
+      getName: function() {
+        return this.super('getName') + '2'
+      },
+      getHeight: function() {
+        return this.height;
+      }
+    })
+    
+    var PVClass = EndClass.extend(function() {
+      var _sex = 'male'
+      return {
+        desc: 'PVClass',
+        setSex: function(sex) {
+          _sex = sex
+        },
+        getSex: function() {
+          return _sex
+        },
+        getName: function() {
+          return this.super('getName') + '3'
+        },
+        getHeight: function() {
+          return this.super('getHeight') + 3
+        },
+        getWeight2: function() {
+          return this.getWeight() + 3
+        }
+      }
+    })
+
+    var base1 = new Base
+    var base2 = new Base('Cator')
+    
+    var subClass11 = new SubClass1
+    var subClass12 = new SubClass1('Cator')
+    
+    var subClass21 = new SubClass2
+    var subClass22 = new SubClass2('Cator')
+    
+    var endClass1 = new EndClass
+    var endClass2 = EndClass.create('Cator')
+    
+    var pvClass = new PVClass
+    
+    strictEqual(base1.name, 'cator', 'class property #1')
+    strictEqual(base2.name, 'Cator', 'class property #2')
+    strictEqual(base1.getName(), 'cator', 'class method #1')
+    strictEqual(base2.getName(), 'Cator', 'class method #2')
+    
+    strictEqual(subClass11.__class__, SubClass1, 'super class #1')
+    strictEqual(subClass12.__class__, SubClass1, 'super class #2')
+    strictEqual(subClass21.__class__, SubClass2, 'super class #3')
+    strictEqual(subClass22.__class__, SubClass2, 'super class #4')
+    
+    strictEqual(subClass11.name, 'cator vee', 'extend class #1')
+    strictEqual(subClass12.name, 'Cator vee', 'extend class #2')
+    strictEqual(subClass21.name, 'cator', 'extend class #3')
+    strictEqual(subClass22.name, 'Cator', 'extend class #4')
+    strictEqual(subClass21.getName(), 'cator', 'extend class #5')
+    strictEqual(subClass22.getName(), 'Cator', 'extend class #6')
+    strictEqual(subClass21.getAge(), 35, 'extend class #7')
+    ok(!v.defined(subClass11.getAge), 'extend class #8')
+    ok(!v.defined(subClass11.age), 'extend class #9')
+    strictEqual(endClass1.name, 'cator vee', 'extend class #10')
+    strictEqual(endClass2.name, 'Cator vee', 'extend class #11')
+    strictEqual(endClass1.getName(), 'cator vee2', 'extend class #12')
+    strictEqual(endClass2.getName(), 'Cator vee2', 'extend class #13')
+    strictEqual(pvClass.getName(), 'cator vee23', 'extend class #14')
+    strictEqual(pvClass.getHeight(), 173, 'extend class #15')
+    strictEqual(pvClass.getWeight(), 70, 'extend class #16')
+    strictEqual(pvClass.getWeight2(), 73, 'extend class #17')
+    
+    strictEqual(pvClass.getSex(), 'male', 'private variable #1')
+    pvClass.setSex('female')
+    strictEqual(pvClass.getSex(), 'female', 'private variable #2')
+    
+    ok('sm' in EndClass, 'static method #1')
+    ok(!('sm' in PVClass), 'static method #2')
+    ok('end' in EndClass, 'static variable #1')
+    ok(!('end' in PVClass), 'static variable #2')
+    
+    ok(base1 instanceof Base, 'inheritance #1')
+    ok(base2 instanceof Base, 'inheritance #2')
+    ok(subClass11 instanceof Base, 'inheritance #3')
+    ok(subClass11 instanceof SubClass1, 'inheritance #4')
+    ok(subClass21 instanceof Base, 'inheritance #5')
+    ok(subClass21 instanceof SubClass2, 'inheritance #6')
+    ok(endClass1 instanceof Base, 'inheritance #7')
+    ok(endClass1 instanceof SubClass1, 'inheritance #8')
+    ok(endClass1 instanceof EndClass, 'inheritance #9')
+  })
+
+
+  module('Promise') // =================================================
+  
+  asyncTest('new Promise', function() {
+    expect(5)
+    
+    var p = new $.Promise(function(resolve, reject) {
+      !function() {
+        resolve(123);
+      }.defer(500);
+    });
+    
+    p.then(function(value) {
+        ok(value === 123, 'test value a')
+        return value
+      }, function(err) {
+        // do nothing
+      }
+    ).then(function(value) {
+        ok(value === 123, 'test value b')
+        throw new Error('error b')
+      }, function(err) {
+        // do nothing
+      }
+    ).then(function(value) {
+      ok(true, 'skip')
+    }).then(function(value) {
+        // do nothing
+      }, function(err) {
+        ok(err instanceof Error && err.message === 'error b', 'test error b')
+        return 'yes';
+      }
+    ).then(function(value) {
+      ok(value === 'yes', 'test value c')
+      throw new Error('error d')
+    }).catch(function(err) {
+      ok(err instanceof Error && err.message === 'error d', 'test error d')
+    }).then(function() {
+        start()
+      }, function() {
+        start()
+      }
+    )
+  })
+  
+  asyncTest('resolve', function() {
+    expect(5)
+    
+    var p = $.Promise.resolve('resolve');
+    
+    p.then(function(value) {
+        ok(value === 'resolve', 'test value a')
+        return value
+      }, function(err) {
+        // do nothing
+      }
+    ).then(function(value) {
+        ok(value === 'resolve', 'test value b')
+        throw new Error('error b')
+      }, function(err) {
+        // do nothing
+      }
+    ).then(function(value) {
+        // do nothing
+      }, function(err) {
+        ok(err instanceof Error && err.message === 'error b', 'test error b')
+        return 'yes';
+      }
+    ).then(function(value) {
+      ok(value === 'yes', 'test value c')
+      throw new Error('error d')
+    }).catch(function(err) {
+      ok(err instanceof Error && err.message === 'error d', 'test error d')
+    }).then(function() {
+        start()
+      }, function() {
+        start()
+      }
+    )
+  })
+  
+  asyncTest('reject', function() {
+    expect(5)
+    
+    var p = $.Promise.reject(new Error('reject'));
+    
+    p.then(function(value) {
+        // do nothing
+      }, function(err) {
+        ok(err instanceof Error && err.message === 'reject', 'test error a')
+      }
+    ).then(function(value) {
+        ok($.defined(value) === false, 'test value b')
+        throw new Error('error b')
+      }, function(err) {
+        // do nothing
+      }
+    ).then(function(value) {
+        // do nothing
+      }, function(err) {
+        ok(err instanceof Error && err.message === 'error b', 'test error b')
+        return 'yes';
+      }
+    ).then(function(value) {
+      ok(value === 'yes', 'test value c')
+      throw new Error('error d')
+    }).catch(function(err) {
+      ok(err instanceof Error && err.message === 'error d', 'test error d')
+    }).then(function() {
+        start()
+      }, function() {
+        start()
+      }
+    )
+  })
+  
+  asyncTest('all', function() {
+    expect(2)
+    
+    var p1 = $.Promise.resolve(1)
+    var p2 = $.Promise.reject(2)
+    var p3 = $.Promise.reject(3)
+    $.Promise.all([true, p2, p1, p3]).then(function(values) {
+      ok(true, 'test then')
+    }).catch(function(value) {
+      ok(value === 2, 'catch reject')
+    });
+    $.Promise.all([true, false, p1]).then(function(values) {
+      deepEqual(values, [true, false, 1], 'test all values')
+      start()
+    })
+  })
+  
+  asyncTest('race', function() {
+    expect(3)
+    
+    var p1 = new $.Promise(function(resolve, reject) { 
+      setTimeout(resolve, 300, "one") 
+    });
+    var p2 = new $.Promise(function(resolve, reject) { 
+      setTimeout(resolve, 100, "two") 
+    });
+
+    $.Promise.race([p1, p2]).then(function(value) {
+      ok(value === 'two', 'test value 1')
+    });
+
+    var p3 = new $.Promise(function(resolve, reject) { 
+      setTimeout(resolve, 100, "three");
+    });
+    var p4 = new $.Promise(function(resolve, reject) { 
+      setTimeout(reject, 300, "four") 
+    });
+
+    $.Promise.race([p3, p4]).then(function(value) {
+      ok(value === 'three', 'test value 2')
+    }, function(reason) {
+      // Not called
+    });
+
+    var p5 = new $.Promise(function(resolve, reject) { 
+      setTimeout(resolve, 300, "five"); 
+    });
+    var p6 = new $.Promise(function(resolve, reject) { 
+      setTimeout(reject, 100, "six");
+    });
+
+    $.Promise.race([p5, p6]).then(function(value) {
+      // Not called
+    }, function(reason) {
+      ok(reason === 'six', 'test value 2')
+    });
+    
+    !function() {
+      start()
+    }.defer(500)
+  })
+  
+  
+  module('Event') // ===================================================
+  
+  asyncTest('Event On/Off/Trigger', function() {
+    expect(2)
+    
+    var el1 = v('#test1')
+    var callback = function(event) {
+      ok(this === el1[0] && event.target === el1[0], 'tap/click event')
+    }
+    
+    el1.on('tap', callback)
+    el1.trigger('tap')
+    el1.off('tap', callback)
+    el1.trigger('tap')
+    
+    var el2 = v('#test2')
+    var callback2 = function(event) {
+      ok(this === el2[0] && event.target === el2[0], 'custom event')
+    }
+    
+    el2.on('custom', callback2)
+    el2.trigger('custom')
+    el2.off('custom', callback2)
+    el2.trigger('custom')
+    
+    start()
+  })
+  
+  
+  module('DOM') // =====================================================
+  
+  test('getDOMObject', function() { //
+    var testEl = document.getElementById('test')
+    var test1El = document.getElementById('test1')
+    var test2El = document.getElementById('test2')
+    
+    var el = v('#test')[0]
+    ok(el === testEl, 'getElementById')
+    
+    el = v('div')[0]
+    ok(el === testEl, 'getElementsByTagName')
+    
+    el = v('.test-node')[0]
+    ok(el === testEl, 'getElementsByClassName')
+    
+    el = v('div.test-node')[0]
+    ok(el === testEl, 'querySelectorAll')
+    
+    el = v('#test > div')[0]
+    ok(el === test1El, 'querySelectorAll with children')
+    
+    
+    el = v('#test', 'div')[1]
+    ok(el === test2El, 'getElementById with children')
+  })
+  
+  test('DOM Operations', function() { //
+    var el = v('#test')
+    var el1 = v('#test1')
+    var el2 = v('#test2')
+    var el3 = v('#test3')
+    var el4 = v('#test4')
+    var el5 = v('#test5')
+    var el9 = v('#test9')
+    var input = v('#test-input')
+    var attr, data, value
+    
+    // ID
+    equal(v.id(el[0]), el[0].id, 'get id of element')
+    ok(/^__id_\d+$/.test(v.id()), 'generate id of element')
+    
+    // Attribute
+    
+    el1.attr('test', 'cator')
+    attr = el1.attr('test')
+    equal(attr, 'cator', 'get/set value of attribute')
+    
+    el1.attr('test', 1)
+    attr = el1.attr('test')
+    ok(attr === '1', 'get/set number value of attribute')
+    
+    el1.attr('test', true)
+    attr = el1.attr('test')
+    equal(attr, 'yes', 'get/set true value of attribute ')
+    
+    el1.attr('test', false)
+    attr = el1.attr('test')
+    equal(attr, 'no', 'get/set false value of attribute ')
+    
+    el1.attr('test', {a:1})
+    attr = el1.attr('test')
+    equal(attr, '{"a":1}', 'get/set object value of attribute ')
+    
+    el1.removeAttr('test')
+    attr = el1.attr('test')
+    ok(attr === null, 'remove attribute')
+    
+    el1.data('test', 'vee')
+    data = el1.data('test')
+    equal(data, 'vee', 'get/set value of data attribute')
+    
+    el1.data('test', 1)
+    data = el1.data('test')
+    ok(data === '1', 'get/set number value of data attribute')
+    
+    el1.data('test', true)
+    data = el1.data('test')
+    equal(data, 'yes', 'get/set true value of data attribute ')
+    
+    el1.data('test', false)
+    data = el1.data('test')
+    equal(data, 'no', 'get/set false value of data attribute ')
+    
+    el1.data('test', {a:1})
+    data = el1.data('test')
+    equal(data, '{"a":1}', 'get/set object value of data attribute ')
+    
+    el1.removeData('test')
+    data = el1.data('test')
+    ok(data === null, 'remove value of data attribute')
+    
+    input.val('cator')
+    value = input.val()
+    equal(value, 'cator', 'get/set the value of input field')
+    
+    ok(el1.enabled() === true, 'get enable/disable status of element')
+    el1.enabled(false)
+    ok(el1.enabled() === false, 'disable the element')
+    el1.enabled(true)
+    ok(el1.enabled() === true, 'enable the element')
+    
+    // Class
+    
+    el1.addClass('test-class')
+    equal(el1[0].className, 'test-class', 'addClass')
+    
+    ok(el1.hasClass('test-class'), 'hasClass')
+    
+    el1.removeClass('test-class')
+    notEqual(el1[0].className, 'test-class', 'removeClass')
+    
+    el1.toggleClass('test-class')
+    equal(el1[0].className, 'test-class', 'toggleClass #1')
+    
+    el1.toggleClass('test-class')
+    notEqual(el1[0].className, 'test-class', 'toggleClass #2')
+    
+    // Style
+    
+    el1.style('background-color', 'rgb(17, 34, 51)')
+    equal(el1[0].style.backgroundColor, 'rgb(17, 34, 51)', 'set style #1')
+    equal(el1.style('background-color'), 'rgb(17, 34, 51)', 'get style')
+    
+    el1.style({
+      'background-color': 'rgb(11, 22, 33)',
+      'border-color': 'rgb(17, 34, 51)'
+    })
+    equal(el1[0].style.backgroundColor, 'rgb(11, 22, 33)', 'set style #2')
+    equal(el1[0].style.borderColor, 'rgb(17, 34, 51)', 'set style #3')
+    
+    el1.vendor('border-radius', '5px')
+    equal('5px', el1.vendor('border-radius'), 'set/get vendor style')
+    
+    el1.hide()
+    // equal(el1[0].style.display, 'none', 'hide')
+    ok(el1.hasClass($.HIDE_CLASS), 'hide')
+    
+    el1.show()
+    // equal(el1[0].style.display, 'block', 'show')
+    ok(!el1.hasClass($.HIDE_CLASS), 'show')
+    
+    // Size & Position
+    
+    var cilentRect = el2[0].getBoundingClientRect()
+    var rect = el2.rect()
+    equal(rect.width, cilentRect.width, 'bounding client rect: width')
+    equal(rect.height, cilentRect.height, 'bounding client rect: height')
+    equal(rect.left, cilentRect.left, 'bounding client rect: left')
+    equal(rect.top, cilentRect.top, 'bounding client rect: top')
+    
+    deepEqual(el2.offset(), {
+      left: cilentRect.left + window.pageXOffset,
+      top: cilentRect.top + window.pageYOffset,
+      width: cilentRect.width,
+      height: cilentRect.height
+    }, 'offset')
+    
+    // Element
+    
+    el3.text('<div>cator</div>')
+    equal(el3.text(), el3[0].textContent, 'set/get text content')
+    
+    el3.html('<div>cator</div>')
+    equal(el3.html(), el3[0].innerHTML, 'set/get HTML content')
+    
+    var newEl = document.createElement('div')
+    el3.html(newEl)
+    equal(el3[0].children[0], newEl, 'set/get HTML content with HTMLElement Object')
+    
+    newEl = [document.createElement('div'), document.createElement('div')]
+    el3.html(newEl)
+    equal(el3[0].children[0], newEl[0], 'set/get HTML content with HTMLElement Array #1')
+    equal(el3[0].children[1], newEl[1], 'set/get HTML content with HTMLElement Array #2')
+    
+    ok(el3.children().has() === true, 'there is some elements')
+    ok(el3.has('div') === true, 'there is some DIV elements')
+    ok(el3.has('span') === false, 'there is not any SPAN elements')
+    
+    el3.empty()
+    equal(el3.html(), '', 'clear content')
+    
+    ok(el3.children().has() === false, 'there is nothing')
+    
+    el3.append('<div>cator</div>')
+    el3.append('<div>vee</div>')
+    equal(el3.html(), '<div>cator</div><div>vee</div>', 'append')
+    
+    el3.prepend('<div>vee</div>')
+    equal(el3.html(), '<div>vee</div><div>cator</div><div>vee</div>', 'prepend')
+    
+    v('#test3 > div:first-child').replaceWith('<div>cator</div>')
+    equal(el3.html(), '<div>cator</div><div>cator</div><div>vee</div>', 'replaceWith')
+
+    v('#test3').append({text: 'xxx'})
+    equal(el3.html(), '<div>cator</div><div>cator</div><div>vee</div><div>xxx</div>', 'append object')
+    
+    v('#test3 > div').remove()
+    equal(el3.html(), '', 'remove')
+    
+    // Query
+    
+    equal(el.find('.test4-node')[0], el4[0], 'find')
+    equal(el.find('.test4-node').isQ, 1, 'result type validation')
+    
+    equal(v('div').parent('body')[0], document.body, 'parent')
+    equal(v('div').parent('body').isQ, 1, 'result type validation')
+    equal(el4.parent()[0], el[0], 'parent without selector')
+    equal(el4.parent().isQ, 1, 'result type validation')
+    
+    var siblings = el2.siblings()
+    equal(siblings[0], el1[0], 'first sibling without selector')
+    equal(siblings[siblings.length - 1], input[0], 'last sibling without selector')
+    equal(siblings.isQ, 1, 'result type validation')
+    
+    siblings = el2.siblings('div')
+    equal(siblings[0], el1[0], 'first sibling')
+    equal(siblings[siblings.length - 1], el9[0], 'last sibling')
+    equal(siblings.isQ, 1, 'result type validation')
+    
+    var children = el.children()
+    equal(children[children.length - 1], input[0], 'children without selector')
+    equal(children.isQ, 1, 'result type validation')
+    
+    children = el.children('div')
+    equal(children[children.length - 1], el9[0], 'children')
+    equal(children.isQ, 1, 'result type validation')
+    
+    var nodes = el.find('div');
+    equal(nodes.get(2)[0], el3[0], 'get')
+    equal(nodes.get(2).isQ, 1, 'result type validation')
+    equal(nodes.last()[0], el9[0], 'last')
+    equal(nodes.last().isQ, 1, 'result type validation')
+    
+    var node = el5.find('div')
+    equal(node.closest('.test-node')[0], el[0], 'closest')
+    equal(node.closest('.test-node').isQ, 1, 'result type validation')
+  })
+  
+  test('createElements', function() { //
+    var el1 = v('#test1')
+    
+    var _el = v.createElements({
+      tag: 'p',
+      style: 'position: fixed',
+      flex: 1,
+      text: 'cator vee',
+      classes: 'test-class',
+      showing: false,
+      width: 100,
+      height: '10px',
+      top: 11,
+      left: 12
+    }, el1)
+    
+    equal(el1[0].children.length, 1, 'create elements #1: node is created')
+    var nel = el1[0].children[0];
+    ok(nel === _el[0], 'create elements #1: return value')
+    equal(nel.tagName, 'P', 'create elements #1: tag')
+    equal(nel.style.position, 'fixed', 'create elements #1: style')
+    equal(v(nel).vendor('box-flex'), '1', 'create elements #1: flex')
+    equal(nel.textContent, 'cator vee', 'create elements #1: text')
+    equal(nel.className, 'test-class', 'create elements #1: classes')
+    equal(nel.style.display, 'none', 'create elements #1: showing')
+    equal(nel.style.width, '100px', 'create elements #1: width')
+    equal(nel.style.height, '10px', 'create elements #1: height')
+    equal(nel.style.top, '11px', 'create elements #1: top')
+    equal(nel.style.left, '12px', 'create elements #1: left')
+    
+    el1.empty()
+    
+    v.createElements({
+      style: 'position: fixed',
+      html: '<b>cator vee</b>',
+      width: 100,
+      height: '10px',
+      bottom: 11,
+      right: 12,
+      dataName: 'Cator',
+      tapHighlight: true
+    }, el1)
+    
+    equal(el1[0].children.length, 1, 'create elements #2: node is created')
+    var nel = el1[0].children[0];
+    equal(nel.tagName, 'DIV', 'create elements #2: style')
+    equal(nel.innerHTML, '<b>cator vee</b>', 'create elements #2: html')
+    equal(nel.style.bottom, '11px', 'create elements #2: bottom')
+    equal(nel.style.right, '12px', 'create elements #2: right')
+    equal(nel.getAttribute('data-name'), 'Cator', 'create elements #2: data')
+    equal(nel.getAttribute('tap-highlight'), 'yes', 'create elements #2: boolean data')
+    
+    el1.empty()
+    
+    v.createElements(v.createElements({
+      style: 'position: fixed',
+      html: '<b>cator vee</b>',
+      width: 100,
+      height: '10px',
+      bottom: 11,
+      right: 12,
+      dataName: 'Cator',
+      tapHighlight: true
+    }), el1)
+    
+    equal(el1[0].children.length, 1, 'create elements #3: node is created')
+    var nel = el1[0].children[0];
+    equal(nel.tagName, 'DIV', 'create elements #3: style')
+    equal(nel.innerHTML, '<b>cator vee</b>', 'create elements #3: html')
+    equal(nel.style.bottom, '11px', 'create elements #3: bottom')
+    equal(nel.style.right, '12px', 'create elements #3: right')
+    equal(nel.getAttribute('data-name'), 'Cator', 'create elements #3: data')
+    equal(nel.getAttribute('tap-highlight'), 'yes', 'create elements #3: boolean data')
+    
+    el1.empty()
+    
+    v.createElements({
+      style: 'position: fixed',
+      width: 100,
+      height: '10px',
+      bottom: 11,
+      right: 12,
+      dataName: 'Cator',
+      tapHighlight: true,
+      components: v.createElements({
+        style: 'position: fixed',
+        html: '<b>cator vee</b>',
+        width: 100,
+        height: '10px',
+        bottom: 11,
+        right: 12,
+        dataName: 'Cator',
+        tapHighlight: true
+      })
+    }, el1)
+    
+    equal(el1[0].children.length, 1, 'create elements #4: node is created')
+    var nel = el1[0].children[0];
+    equal(nel.tagName, 'DIV', 'create elements #4: style')
+    equal(nel.style.bottom, '11px', 'create elements #4: bottom')
+    equal(nel.style.right, '12px', 'create elements #4: right')
+    equal(nel.getAttribute('data-name'), 'Cator', 'create elements #4: data')
+    equal(nel.getAttribute('tap-highlight'), 'yes', 'create elements #4: boolean data')
+    var el2 = $(nel);
+    equal(el2[0].children.length, 1, 'create elements #5: node is created')
+    var nel = el2[0].children[0];
+    equal(nel.tagName, 'DIV', 'create elements #5: style')
+    equal(nel.innerHTML, '<b>cator vee</b>', 'create elements #5: html')
+    equal(nel.style.bottom, '11px', 'create elements #5: bottom')
+    equal(nel.style.right, '12px', 'create elements #5: right')
+    equal(nel.getAttribute('data-name'), 'Cator', 'create elements #5: data')
+    equal(nel.getAttribute('tap-highlight'), 'yes', 'create elements #5: boolean data')
+    
+    el1.empty()
+    
+    v.createElements({
+      style: 'position: fixed',
+      width: 100,
+      height: '10px',
+      bottom: 11,
+      right: 12,
+      dataName: 'Cator',
+      tapHighlight: true,
+      components: [v.createElements({
+        style: 'position: fixed',
+        html: '<b>cator vee</b>',
+        width: 100,
+        height: '10px',
+        bottom: 11,
+        right: 12,
+        dataName: 'Cator',
+        tapHighlight: true
+      }), {
+        style: 'position: fixed',
+        html: '<b>cator vee</b>',
+        width: 100,
+        height: '10px',
+        bottom: 11,
+        right: 12,
+        dataName: 'Cator',
+        tapHighlight: true
+      }]
+    }, el1)
+    
+    equal(el1[0].children.length, 1, 'create elements #6: node is created')
+    var nel = el1[0].children[0];
+    equal(nel.tagName, 'DIV', 'create elements #6: style')
+    equal(nel.style.bottom, '11px', 'create elements #6: bottom')
+    equal(nel.style.right, '12px', 'create elements #6: right')
+    equal(nel.getAttribute('data-name'), 'Cator', 'create elements #6: data')
+    equal(nel.getAttribute('tap-highlight'), 'yes', 'create elements #6: boolean data')
+    var el2 = $(nel);
+    equal(el2[0].children.length, 2, 'create elements #7: node is created')
+    var nel = el2[0].children[0];
+    equal(nel.tagName, 'DIV', 'create elements #7: style')
+    equal(nel.innerHTML, '<b>cator vee</b>', 'create elements #7: html')
+    equal(nel.style.bottom, '11px', 'create elements #7: bottom')
+    equal(nel.style.right, '12px', 'create elements #7: right')
+    equal(nel.getAttribute('data-name'), 'Cator', 'create elements #7: data')
+    equal(nel.getAttribute('tap-highlight'), 'yes', 'create elements #7: boolean data')
+    var nel = el2[0].children[1];
+    equal(nel.tagName, 'DIV', 'create elements #8: style')
+    equal(nel.innerHTML, '<b>cator vee</b>', 'create elements #8: html')
+    equal(nel.style.bottom, '11px', 'create elements #8: bottom')
+    equal(nel.style.right, '12px', 'create elements #8: right')
+    equal(nel.getAttribute('data-name'), 'Cator', 'create elements #8: data')
+    equal(nel.getAttribute('tap-highlight'), 'yes', 'create elements #8: boolean data')
+    
+    el1.empty()
+    
+    v.$({
+      style: 'position: fixed',
+      width: 100,
+      height: '10px',
+      bottom: 11,
+      right: 12,
+      dataName: 'Cator',
+      tapHighlight: true,
+      components: [v.$({
+        style: 'position: fixed',
+        html: '<b>cator vee</b>',
+        width: 100,
+        height: '10px',
+        bottom: 11,
+        right: 12,
+        dataName: 'Cator',
+        tapHighlight: true
+      }), {
+        style: 'position: fixed',
+        html: '<b>cator vee</b>',
+        width: 100,
+        height: '10px',
+        bottom: 11,
+        right: 12,
+        dataName: 'Cator',
+        tapHighlight: true
+      }]
+    }, el1)
+    
+    equal(el1[0].children.length, 1, 'create elements #6: node is created')
+    var nel = el1[0].children[0];
+    equal(nel.tagName, 'DIV', 'create elements #6: style')
+    equal(nel.style.bottom, '11px', 'create elements #6: bottom')
+    equal(nel.style.right, '12px', 'create elements #6: right')
+    equal(nel.getAttribute('data-name'), 'Cator', 'create elements #6: data')
+    equal(nel.getAttribute('tap-highlight'), 'yes', 'create elements #6: boolean data')
+    var el2 = $(nel);
+    equal(el2[0].children.length, 2, 'create elements #7: node is created')
+    var nel = el2[0].children[0];
+    equal(nel.tagName, 'DIV', 'create elements #7: style')
+    equal(nel.innerHTML, '<b>cator vee</b>', 'create elements #7: html')
+    equal(nel.style.bottom, '11px', 'create elements #7: bottom')
+    equal(nel.style.right, '12px', 'create elements #7: right')
+    equal(nel.getAttribute('data-name'), 'Cator', 'create elements #7: data')
+    equal(nel.getAttribute('tap-highlight'), 'yes', 'create elements #7: boolean data')
+    var nel = el2[0].children[1];
+    equal(nel.tagName, 'DIV', 'create elements #8: style')
+    equal(nel.innerHTML, '<b>cator vee</b>', 'create elements #8: html')
+    equal(nel.style.bottom, '11px', 'create elements #8: bottom')
+    equal(nel.style.right, '12px', 'create elements #8: right')
+    equal(nel.getAttribute('data-name'), 'Cator', 'create elements #8: data')
+    equal(nel.getAttribute('tap-highlight'), 'yes', 'create elements #8: boolean data')
+    
+    el1.empty()
+
+    v.$('aaaa', el1)
+    equal(el1[0].innerHTML, 'aaaa', 'create a text node')
+
+    el1.empty()
+
+  })
+
+  asyncTest('createElements with event listen', function() { //
+    expect(2)
+    
+    var el1 = v('#test1')
+    
+    var callback = function(event) {
+      ok(this === _el[0] && event.target === _el[0], 'tap/click event')
+    }
+    
+    var _el = v.createElements({
+      onTap: callback
+    }, el1)
+    
+    el1.children().trigger('tap')
+    el1.children().off('tap', callback)
+    el1.children().trigger('tap')
+    
+    el1.empty()
+    
+    var callback2 = function(event) {
+      ok(this === _el[0] && event.target === _el[0], 'custom event')
+    }
+    
+    _el = v.createElements({
+      onCustom: callback2
+    }, el1)
+    
+    el1.children().trigger('custom')
+    el1.children().off('custom', callback2)
+    el1.children().trigger('custom')
+    
+    el1.empty()
+    
+    start()
+  })
+  
+  
+  module('Url') // =====================================================
+  
+  test('encode & decoded', function() {
+    var decoded = 'http://catorv.com/index.html?i=1&b=true&a=1&a=2&a=3&o=%7B%22a%22%3A1%7D'
+    var encoded = 'http%3A%2F%2Fcatorv.com%2Findex.html%3Fi%3D1%26b%3Dtrue%26a%3D1%26a%3D2%26a%3D3%26o%3D%257B%2522a%2522%253A1%257D'
+    equal(v.url.encode(decoded), encoded, 'encode')
+    equal(v.url.decode(encoded), decoded, 'decode')
+  })
+  
+  test('query string', function() {
+    var obj = {i: 1, b: true, a: [1,2,3], o: {a:1}}
+    var str = 'i=1&b=true&a=1&a=2&a=3&o=%7B%22a%22%3A1%7D'
+    equal(v.url.query(obj), str, 'encode')
+    deepEqual(v.url.query(), obj, 'decode from url')
+    deepEqual(v.url.query(str), obj, 'decode from string')
+  })
+  
+  test('build', function() {
+    var url1 = location.protocol + '//' + location.host
+    var url2 = location.protocol + '//' + location.host + location.pathname
+    
+    equal(v.url.build({a:1, b:2}, 'http://www.google.com/'), 
+          'http://www.google.com/?a=1&b=2', 
+          'http://')
+    equal(v.url.build({a:1, b:2}, 'https://www.google.com/'), 
+          'https://www.google.com/?a=1&b=2', 
+          'https://')
+    equal(v.url.build({a:1, b:2}, 'tel://138888888'), 
+          'tel://138888888?a=1&b=2', 
+          'tel://')
+    
+    equal(v.url.build({a:1, b:2}, 'http://www.google.com/index.html'), 
+          'http://www.google.com/index.html?a=1&b=2', 
+          'http:// without query string')
+    
+    equal(v.url.build({a:1, b:2}, 'http://www.google.com/index.html?c=3'), 
+          'http://www.google.com/index.html?c=3&a=1&b=2', 
+          'http:// with query string')
+    
+    equal(v.url.build({a:1, b:2}), url2 + '?a=1&b=2', 'without path, host and protocol')
+    
+    equal(v.url.build({a:1, b:2}, '/abc/index.html?c=3'), 
+          url1 + '/abc/index.html?c=3&a=1&b=2',
+          'without host and protocol')
+
+    equal(v.url.build({a:1, b:2}, '/abc/index.html?c=3', 'google.com'), 
+          location.protocol + '//google.com/abc/index.html?c=3&a=1&b=2',
+          'without protocol')
+    
+    equal(v.url.build({a:1, b:2}, 'abc/index.html'), 
+          url1 + '/abc/index.html?a=1&b=2',
+          'relative path: abc/index.html')
+    equal(v.url.build({a:1, b:2}, './abc/index.html'), 
+          './abc/index.html?a=1&b=2',
+          'relative path: ./abc/index.html')
+    equal(v.url.build({a:1, b:2}, '../abc/index.html?c=3'), 
+          '../abc/index.html?c=3&a=1&b=2',
+          'relative path: ../abc/index.html')
+  })
+
+  test('parse', function() {
+    var url = 'http://cator:888888@example.com:3000/pathname/?search=test#hash'
+    var obj = {
+      hash: '#hash',
+      host: 'example.com:3000',
+      hostname: 'example.com',
+      href: 'http://cator:888888@example.com:3000/pathname/?search=test#hash',
+      origin: 'http://example.com:3000',
+      //password: '888888',
+      pathname: '/pathname/',
+      port: '3000',
+      protocol: 'http:',
+      search: '?search=test',
+      //username: 'cator'
+    }
+    var result = v.url.parse(url)
+    var keys = [
+      'hash', 'host', 'hostname', 'href', 'origin', 'password', 
+      'pathname', 'port', 'protocol', 'search', 'username'
+    ]
+    for (var i = 0; i < keys.length; i++) {
+      var key = keys[i]
+      equal(obj[key], result[key], 'parse url #1: ' + key)
+    }
+
+    url = 'pathname/?search=test#hash'
+    obj = {
+      hash: '#hash',
+      host: location.host,
+      hostname: location.hostname,
+      href: location.origin + '/pathname/?search=test#hash',
+      origin: location.origin,
+      //password: '888888',
+      pathname: '/pathname/',
+      port: location.port,
+      protocol: location.protocol,
+      search: '?search=test',
+      //username: 'cator'
+    }
+    result = v.url.parse(url)
+    for (var i = 0; i < keys.length; i++) {
+      var key = keys[i]
+      equal(obj[key], result[key], 'parse url #2: ' + key)
+    }
+  })
+
+  module('Ajax') // ====================================================
+  
+  asyncTest('get text', function() {
+    expect(1)
+    
+    v.ajax({
+      url: 'test-data/name.txt',
+      dataType: 'text'
+    }).then(function(result) {
+      equal(result.response.trim(), 'cator')
+      start()
+    })
+  })
+  
+  asyncTest('get json', function() {
+    expect(1)
+    
+    v.get('test-data/name.json').then(function(result) {
+      deepEqual(result.response, {name:'cator'})
+      start()
+    })
+  })
+  
+  asyncTest('get json (jsonp)', function() {
+    expect(1)
+    
+    v.get('test-data/name.js?callback=?').then(function(result) {
+      deepEqual(result.response, {name:'cator'})
+      start()
+    })
+  })
+  
+  asyncTest('get json (error)', function() {
+    expect(1)
+    
+    v.get('test-data/name2.json').then(function(result) {
+      // do nothing
+    }).catch(function(res) {
+      ok(res.error === 404, 'check 404 status')
+      start()
+    })
+  })
+  
+  module('Data') // ====================================================
+  
+  test('cookie', function() {
+    v.cookie.set('abc', 'cator')
+    var value = v.cookie.get('abc')
+    
+    equal(value, 'cator', 'get & set')
+    
+    deepEqual({
+      abc: v.cookie.get().abc
+    }, {abc: 'cator'}, 'get all cookies')
+    
+    v.cookie.remove('abc')
+    value = v.cookie.get('abc')
+    
+    equal(value, undefined, 'remove')
+
+    v.cookie.set('abc', 'cator')
+    v.cookie.set('abc2', 'cator2')
+    v.cookie.clear()
+    value = v.cookie.get('abc')
+    equal(value, undefined, 'clear #1')
+    value = v.cookie.get('abc2')
+    equal(value, undefined, 'clear #2')
+  })
+  
+  test('storage', function() {
+    v.storage.set('abc', 'cator')
+    var value = v.storage.get('abc')
+    
+    equal(value, 'cator', 'get & set')
+    
+    v.storage.remove('abc')
+    value = v.storage.get('abc')
+    
+    equal(value, undefined, 'remove')
+    
+    v.storage.set('abc', 'cator')
+    v.storage.set('abc2', 'cator2')
+    v.storage.set('abc3', 'cator3')
+    v.storage.clear();
+    value = v.storage.get('abc')
+    
+    equal(value, undefined, 'clear')
+  })
+  
+  asyncTest('cache', function() {
+    // expect(9)
+    expect(3)
+
+    v.cache.set('abc', 'cator', 10)
+    var value = v.cache.get('abc')
+    
+    equal(value, 'cator', 'get & set')
+    
+    v.cache.remove('abc')
+    value = v.cache.get('abc')
+    
+    equal(value, undefined, 'remove')
+    
+    v.cache.set('abc', 'cator')
+    v.cache.set('abc2', 'cator2')
+    v.cache.set('abc3', 'cator3')
+    v.cache.clear()
+    value = v.cache.get('abc')
+    
+    equal(value, undefined, 'clear')
+    
+    // v.cache.set('abc', 'cator', 1)
+    // v.cache.set('abc2', 'cator2', 2)
+    
+    // setTimeout(function() {
+    //   equal(v.cache.get('abc'), 'cator', 'not expired')
+    //   equal(v.cache.get('abc2'), 'cator2', 'not expired')
+    // }, 500)
+    
+    // setTimeout(function() {
+    //   equal(v.cache.get('abc'), undefined, 'expired')
+    //   equal(v.cache.get('abc2'), 'cator2', 'not expired')
+    // }, 1500)
+    
+    // setTimeout(function() {
+    //   notEqual(v.storage.get('~abc2'), undefined, 'not removed')
+    //   v.cache.clearExpired()
+    //   equal(v.storage.get('~abc2'), undefined, 'removed')
+    //   start()
+    // }, 2500)
+    start()
+  })
+  
+})
+
+
+</script>

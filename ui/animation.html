@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="format-detection" content="telephone=no, email=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>animation - VJS</title>
+  <!-- css -->
+  <style type="text/css">
+  
+  </style>
+</head>
+<body>
+  <!-- html -->
+  <div id="span-wrapper" style="position: relative; width: 200px; height: 200px; border: 1px solid #000; background2: rgba(0,0,0,0.5)">
+    <div class="block" style="position:absolute; width: 10px; height: 10px; top: 0; left: 10px; background: #ff0000;"></div>
+    <div class="block" style="position:absolute; width: 10px; height: 10px; top: 50px; left: 10px; background: #00ff00;"></div>
+    <div class="block2" style="position:absolute; width: 50px; height: 50px; top: 100px; left: 20px; background: #0ff0f0;"></div>
+  </div>
+
+<!-- js -->
+<script src="../build/vee.debug.js" data-base-url="src/"></script>
+<script src="src/animation.js"></script>
+<script>
+v.ready(function() {
+  $('.block').animation({
+    left: 190,
+    top: '+=100',
+    height: 20,
+    opacity: 0.5,
+    backgroundColor: '#9999ff'
+  }, {
+    duration: 2000,
+    easing: v.easing.linear
+  }).then(function(data) {
+    DEBUG && console.debug('finished');
+  })
+  
+  $('.block2').animation({
+    backgroundColor: '#ff0000'
+    // transform: 'translate3d(0px,10px,10px)'
+  }, {
+    duration: 3000, 
+    easing: v.easing.bounceOut,
+    onStep: function(step) {
+      this.vendor('transform', 'translate3d(0,' + 50 * step + 'px,0)')
+    }
+  })
+})
+</script>

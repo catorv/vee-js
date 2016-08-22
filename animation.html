@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="format-detection" content="telephone=no, email=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Animation - VJS</title>
+  <!-- css -->
+  <style type="text/css">
+  body {
+    padding: 0;
+    margin: 0;
+    background-color: #f2f2f2;
+  }
+  #test {
+    background-color: #0d3349;
+    margin-bottom: 8px;
+  }
+  #test.highlight {
+    background-color: red;
+  }
+  #test > div {
+    height: 20px;
+  }
+  /*.running {
+    transform: scale(2);
+    -webkit-transform: scale(2);
+    z-index: 10000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }*/
+  .wrapper {
+    position: relative; 
+    float: left; 
+    margin: 10px 0 0 15ipx;
+    padding: 4px; 
+    border: 1px dotted #eee;
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2)
+  }
+  .title {
+    position: absolute; 
+    left:0; 
+    right:0; 
+    font-weight: bold; 
+    font-size: 1em; 
+    text-align: center;
+  }
+  .arrow {
+    position: absolute;
+    width: 12px;
+    height: 10px;
+    margin-top: -5px;
+    background-color: red;
+    top: 4px;
+    right: -13px;
+    z-index: 9;
+    opacity: 0;
+  }
+  .arrow:before {
+    content: "";
+    position: absolute;
+    left: -10px;
+    top: 0px;
+    width: 0px;
+    height: 0px;
+    border: 5px solid red;
+    border-color: transparent red transparent transparent;
+  }
+  canvas {
+    display: block
+  }
+  .clear {
+    clear: both;
+  }
+  </style>
+  
+</head>
+<body>
+  <!-- html -->
+
+<!-- js -->
+<script src="src/vee.js"></script>
+<script src="src/require.js" data-require="env,event"></script>
+<script>
+require('dom', 'animation').then(function() {
+  "use strict";
+  
+  var layoutEl = $('.layout')
+  
+  var easingFunctions = []
+  var count = 0
+  v.each(v.easing, function(item, key) {
+    easingFunctions.push(key);
+    animation(key, true)
+    count++
+    if (count % 6 == 0) {
+      v.$({classes: 'clear'}, document.body)
+    }
+  });
+  
+  function animation(easing, quick) {
+    var width = 140
+    var height = 60
+    var hspace = 2
+    var running = false
+    
+    var el = v.$({
+      classes: 'wrapper',
+      onTap: function() {
+        if (!running) {
+          run()
+        }
+      },
+      components: [{
+        classes: 'title',
+        text: easing
+      }, {
+        classes: 'arrow'
+      }, {
+        tag: 'canvas',
+        height: height * 2,
+        width: width + hspace
+      }]
+    }, document.body)
+
+    var arrowEl = el.find('.arrow')
+
+    var canvasEl = el.find('canvas')
+    var canvas = canvasEl[0]
+    canvas.width = width * 2 + hspace * 2 * 2
+    canvas.height = height * 2 * 2
+    var ctx = canvas.getContext('2d')
+    ctx.translate(hspace * 2, 0);
+    ctx.lineCap="round";
+    ctx.lineJoin="round";
+    
+    run()
+    
+    function run() {
+      running = true
+      
+      el.addClass('running')
+      
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      
+      ctx.beginPath()
+      ctx.lineWidth = 1
+      ctx.strokeStyle = '#f99'
+      ctx.moveTo(0, height * 2 * 0.5)
+      ctx.lineTo(width * 2, height * 2 * 0.5)
+      ctx.moveTo(0, height * 2 * 1.5)
+      ctx.lineTo(width * 2, height * 2 * 1.5)
+      ctx.stroke()
+      ctx.strokeStyle = '#fee'
+      ctx.moveTo(0, height * 2)
+      ctx.lineTo(width * 2, height * 2)
+      ctx.stroke()
+      ctx.closePath()
+
+      ctx.beginPath()
+      ctx.lineWidth = 3
+      ctx.strokeStyle = '#080'
+      ctx.moveTo(0, height * 2 * 1.5)
+      drawArrow(ctx, 0, height * 2 * 1.5)
+
+      if (quick) {
+        quick = false
+        !function() {
+          for (var i = 0; i <= width; i++) {
+            var percent = i / width
+            var value = percent >= 1 ? 1 : v.easing[easing](percent)
+            var x = width * 2 * percent
+            var y = height * 2 * (1 - value) + height * 2 * 0.5
+            ctx.lineTo(x, y)
+            ctx.stroke()
+          }
+          ctx.closePath()
+          arrowEl.style('-webkit-transform', 'translate3d(0, ' + height * 1.5 + 'px, 0)');
+          el.removeClass('running')
+          running = false
+        }()
+      } else {
+        arrowEl.style('-webkit-transform', 'translate3d(0, ' + height * 1.5 + 'px, 0)');
+        arrowEl.style('opacity', 1)
+        new v.Animator({
+          duration: 1500,
+          easing: v.easing[easing],
+          // reversed: true,
+          endValue: 100,
+          onStep: function() {
+            var x = width * 2 * this.percent
+            var y = height * 2 * (1 - this.value / 100) + height * 2 * 0.5
+            ctx.lineTo(x, y)
+            ctx.stroke()
+            drawArrow(ctx, x, y)
+          }
+        }).start().then(function() {
+          ctx.lineTo(width * 2, height * 2 * 0.5)
+          ctx.stroke()
+          drawArrow(ctx, width * 2, height * 2 * 0.5)
+          ctx.closePath()
+          
+          return new v.Animator({
+            duration: 500,
+            reversed: true,
+            startValue: 1,
+            endValue: 0,
+            // easing: v.easing.linear,
+            onStep: function() {
+              arrowEl.style('opacity', this.value)
+            }
+          }).start()
+        }).then(function(data) {
+          arrowEl.style('opacity', 0)
+          running = false
+          el.removeClass('running')
+        })
+      }
+    }
+    
+    function drawArrow(ctx, x, y) {
+      arrowEl.style('-webkit-transform', 'translate3d(0, ' + y / 2 + 'px, 0)');
+    }
+  }
+});
+</script>

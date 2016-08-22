@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="format-detection" content="telephone=no, email=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Promise - VJS</title>
+  <!-- css -->
+  <style type="text/css">
+  
+  </style>
+</head>
+<body>
+  <!-- html -->
+
+<!-- js -->
+<script src="src/vee.js"></script>
+<script src="src/promise.js"></script>
+<script>
+'use strict';
+
+var p1 = new $.Promise(function(resolve, reject) {
+  !function() {
+    DEBUG && console.log('debug ===================================');
+    resolve(123);
+  }.defer(1000);
+});
+
+var p2 = new Promise(function(resolve, reject) {
+  !function() {
+    DEBUG && console.log('debug2 ===================================');
+    resolve(123);
+  }.defer(1000);
+});
+
+var p3 = $.Promise.resolve('resolve');
+var p4 = $.Promise.reject(new Error('reject'));
+
+var p5 = Promise.resolve('resolve');
+var p6 = Promise.reject(new Error('reject'));
+
+function test(p, tag) {
+  p.then(function(value) {
+    DEBUG && console.log('a' + tag, value);
+    return value;
+  }, function(err) {
+    DEBUG && console.log('error a' + tag, formatErr(err));
+  }).then(function(value) {
+    DEBUG && console.log('b' + tag, value);
+    throw new Error('error b' + tag);
+  }, function(err) {
+    DEBUG && console.log('error b' + tag, formatErr(err));
+  }).then(function(value) {
+    DEBUG && console.log('skip ' + tag, value);
+  }).then(function(value) {
+    DEBUG && console.log('c' + tag, value);
+  }, function(err) {
+    DEBUG && console.log('error c' + tag, formatErr(err));
+    return 'yes';
+  }).then(function(value) {
+    DEBUG && console.log('d' + tag, value);
+    throw new Error('error d' + tag);
+  }).catch(function(err) {
+    DEBUG && console.log('error d' + tag, formatErr(err));
+  });
+}
+
+var i = 1;
+test(p1, i++);
+test(p2, i++);
+test(p3, i++);
+test(p4, i++);
+test(p5, i++);
+test(p6, i++);
+
+!function() {
+  var p1 = new Promise(function(resolve, reject) { 
+    setTimeout(resolve, 500, "one"); 
+  });
+  var p2 = new Promise(function(resolve, reject) { 
+    setTimeout(resolve, 100, "two"); 
+  });
+
+  Promise.race([p1, p2]).then(function(value) {
+    console.log(value); // "two"
+    // Both resolve, but p2 is faster
+  });
+
+  var p3 = new Promise(function(resolve, reject) { 
+    setTimeout(resolve, 100, "three");
+  });
+  var p4 = new Promise(function(resolve, reject) { 
+    setTimeout(reject, 500, "four"); 
+  });
+
+  Promise.race([p3, p4]).then(function(value) {
+    console.log(value); // "three"
+    // p3 is faster, so it resolves
+  }, function(reason) {
+    // Not called
+  });
+
+  var p5 = new Promise(function(resolve, reject) { 
+    setTimeout(resolve, 500, "five"); 
+  });
+  var p6 = new Promise(function(resolve, reject) { 
+    setTimeout(reject, 100, "six");
+  });
+
+  Promise.race([p5, p6]).then(function(value) {
+    // Not called
+  }, function(reason) {
+    console.log(reason); // "six"
+    // p6 is faster, so it rejects
+  });
+  
+  var promise = Promise.resolve(3);
+  Promise.all([true, promise]).then(function(values) {
+    console.log('all:', values); // [true, 3]
+  });
+  
+  var ap1 = Promise.resolve(3);
+  var ap2 = Promise.reject(3);
+  Promise.all([true, false, ap1]).then(function(values) {
+    console.log('all:', values); // [true, 3]
+  }).catch(function(value) {
+    console.log('all error:', values);
+  });
+  Promise.all([true, ap2, ap1]).then(function(values) {
+    console.log('all:', values); // [true, 3]
+  }).catch(function(value) {
+    console.log('all error:', value);
+  });
+}.defer(3000);
+
+!function() {
+  var p1 = new $.Promise(function(resolve, reject) { 
+    setTimeout(resolve, 500, "one"); 
+  });
+  var p2 = new $.Promise(function(resolve, reject) { 
+    setTimeout(resolve, 100, "two"); 
+  });
+
+  $.Promise.race([p1, p2]).then(function(value) {
+    console.log(value); // "two"
+    // Both resolve, but p2 is faster
+  });
+
+  var p3 = new $.Promise(function(resolve, reject) { 
+    setTimeout(resolve, 100, "three");
+  });
+  var p4 = new $.Promise(function(resolve, reject) { 
+    setTimeout(reject, 500, "four"); 
+  });
+
+  $.Promise.race([p3, p4]).then(function(value) {
+    console.log(value); // "three"
+    // p3 is faster, so it resolves
+  }, function(reason) {
+    // Not called
+  });
+
+  var p5 = new $.Promise(function(resolve, reject) { 
+    setTimeout(resolve, 500, "five"); 
+  });
+  var p6 = new $.Promise(function(resolve, reject) { 
+    setTimeout(reject, 100, "six");
+  });
+
+  $.Promise.race([p5, p6]).then(function(value) {
+    // Not called
+  }, function(reason) {
+    console.log(reason); // "six"
+    // p6 is faster, so it rejects
+  });
+  
+  var promise = $.Promise.resolve(3);
+  $.Promise.all([true, promise]).then(function(values) {
+    console.log('all:', values); // [true, 3]
+  });
+  
+  var ap1 = $.Promise.resolve(3);
+  var ap2 = $.Promise.reject(3);
+  $.Promise.all([true, false, ap1]).then(function(values) {
+    console.log('all:', values); // [true, 3]
+  }).catch(function(value) {
+    console.log('all error:', values);
+  });
+  $.Promise.all([true, ap2, ap1]).then(function(values) {
+    console.log('all:', values); // [true, 3]
+  }).catch(function(value) {
+    console.log('all error:', value);
+  });
+}.defer(3500);
+
+
+
+function formatErr(err) {
+  return '[' + err + ']';
+}
+
+</script>

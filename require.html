@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="format-detection" content="telephone=no, email=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Require - VJS</title>
+  <!-- css -->
+  <style type="text/css">
+  
+  </style>
+</head>
+<body>
+  <!-- html -->
+
+<!-- js -->
+<script src="src/vee.js"></script>
+<script src="src/promise.js"></script>
+<script src="src/require.js" data-require="env,data,dom"></script>
+<script>
+'use strict';
+
+require('event', 'ajax', 'gesture.js', './test-data/body.css', './test-data/cator20061210.jpg?test2').then(function(values) {
+  DEBUG && console.log('require:', values);
+  var image = values[4];
+  DEBUG && console.log(image.width, image.height);
+}).catch(function(err) {
+  console.error(err);
+});
+
+</script>

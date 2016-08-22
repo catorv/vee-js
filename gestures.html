@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="format-detection" content="telephone=no, email=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Gestures - VJS</title>
+  <!-- css -->
+  <style type="text/css">
+  #test {
+    background-color: #0d3349;
+    height: 300px
+  }
+  #test.highlight {
+    background-color: red;
+  }
+  #test > div {
+    height: 20px;
+  }
+  .row {
+    height: 40px;
+    background-color: green;
+    margin: 4px;
+    line-height: 40px;
+    padding-left: 10px;
+    color: #fff;
+  }
+  .row.highlight {
+    background-color: blue;
+  }
+  </style>
+</head>
+<body>
+  <!-- html -->
+  <div id="test" class="test-node" tap-highlight="yes">
+    <div id="test1"></div>
+    <div id="test2"></div>
+    <div id="test3"></div>
+    <div id="test4" class="test4-node"></div>
+    <div id="test5"><div></div></div>
+    <div id="test9"></div>
+    <input id="test-input"/>
+  </div>
+  
+  <div id="test-box" tap-highlight="yes" style="background-color: #f2f2f2; height: 300px;">
+    <div id="text-box-1" class="row" tap-highlight="yes">1</div>
+    <div id="text-box-2" class="row" tap-highlight="yes">2</div>
+    <div id="text-box-3" class="row" tap-highlight="yes">3</div>
+    <div id="text-box-4" class="row" tap-highlight="yes">4</div>
+    <div id="text-box-5" class="row" tap-highlight="yes">5</div>
+    <div id="text-box-6" class="row" tap-highlight="yes">6</div>
+    <div id="text-box-7" class="row" tap-highlight="yes">7</div>
+    <div id="text-box-8" class="row" tap-highlight="yes">8 -</div>
+    <div id="text-box-9" class="row" tap-highlight="yes">9</div>
+    <div id="text-box-10" class="row" tap-highlight="yes">10</div>
+    <div id="text-box-11" class="row" tap-highlight="yes">11</div>
+    <div id="text-box-12" class="row" tap-highlight="yes">12</div>
+  </div>
+  
+
+<!-- js -->
+<script src="src/vee.js"></script>
+<script src="src/require.js" data-require="env;event,dom,gesture"></script>
+<script>
+$(function() {
+  "use strict"
+  
+  var list = ['tap', 'singleTap', 'doubleTap', 'hold',
+                  'dragStart', 'drag', 'drop',
+                  'pinch', 'pinching']
+  var el = $('#test')
+  var callback = function(event, name) {
+    console.log('#' + event.target.id, 
+                event, 
+                'type:', event.type,
+                'name:', name,
+                'dx:', event.dx,
+                'dy:', event.dy,
+                'dir:', event.dir || '-',
+                'rotation:', event.rotation,
+                'scale:', event.scale)
+  }
+  
+  list.forEach(function(name) {
+    el.on(name, function(event) {
+      callback.call(this, event, name);
+    });
+  })
+  
+  $('.row').singleTap(function() {
+    console.log($(this).attr('id'))
+  })
+})
+
+
+</script>

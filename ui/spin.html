@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="format-detection" content="telephone=no, email=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Spinner - VJS</title>
+  <!-- css -->
+  <style type="text/css">
+  
+  </style>
+</head>
+<body>
+  <!-- html -->
+  <div id="span-wrapper" style="position: relative; width: 200px; height: 200px; border: 1px solid #000; background2: rgba(0,0,0,0.5)"></div>
+
+<!-- js -->
+<script src="../build/vee.debug.js" data-base-url="src/"></script>
+<script src="src/Spinner.js"></script>
+<script>
+var spinner
+v.ready(function() {
+  spinner = new v.ui.Spinner({
+    color: '#000'
+  })
+  spinner.spin('#span-wrapper')
+})
+</script>
