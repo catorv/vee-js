@@ -53,10 +53,12 @@ DEBUG && console.time('data');
             var parts = item.split('=');
             var key = parts[0];
             var value = v.url.decode(parts[1]);
-            try {
-              value = JSON.parse(value);
-            } catch (e) {
-              // do nothing
+            if (/^[\[\{]/.test(value)) {
+              try {
+                value = JSON.parse(value);
+              } catch (e) {
+                // do nothing
+              }
             }
             if (key in result) {
               if (Array.isArray(result[key])) {
