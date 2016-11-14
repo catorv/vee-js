@@ -153,30 +153,45 @@ DEBUG && console.time('core');
   }
 
   // Extend Image Object
-  Image.load = function(url) {
+  Image.load = function(url, nohack) {
     var name = v.id();
     var image = new Image()
+    var iframeEl
+    var clearFn = function() {
+      if (name in Image) {
+        delete Image[name];
+      }
+      if (iframeEl) {
+        iframeEl.remove()
+      }
+    }
     
-    Image[name] = '<img src="' + url + '">';
+    if (!nohack) {
+      Image[name] = '<img src="' + url + '">';
+      
+      iframeEl = v.$({
+        tag: 'iframe',
+        width: 1,
+        height: 1,
+        style: 'position:fixed;opacity:0',
+        src: 'javascript:parent.Image.' + name
+      }, document.body);
+    }
     
-    var iframeEl = v.$({
-      tag: 'iframe',
-      width: 1,
-      height: 1,
-      style: 'position:fixed;opacity:0',
-      src: 'javascript:parent.Image.' + name
-    }, document.body);
-    
+    image.src = url;
+    if (image.complete) {
+      clearFn()
+      return Promise.resolve(image);
+    }
     return new Promise(function(resolve, reject) {
       image.onload = function() {
-        delete Image[name];
-        iframeEl.remove()
+        clearFn()
         resolve(image)
       }
       image.onerror = function(event) {
+        clearFn()
         reject(event)
       }
-      image.src = url
     })
   };
   
